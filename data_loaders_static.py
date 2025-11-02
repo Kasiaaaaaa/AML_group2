@@ -141,8 +141,8 @@ def build_imagenet():
 
 class MFCCPreprocessor:
     """
-    Waveform -> MFCC tensor with per-utterance CMVN and fixed time frames.
-    Output per sample: [1, 40, 100] (channel, mfcc, time)
+    This class Extracts MFCC features from a speech signal and outputs them in a matrix with a fixed time length 
+    (same number of frames for every sample)
     """
     def __init__(self, sample_rate=16000, n_mfcc=40, n_mels=64, fixed_frames=100, cmvn=True):
         self.sr = int(sample_rate)
@@ -183,8 +183,7 @@ class MFCCPreprocessor:
 
 class SpeechCommandsMFCC(Dataset):
     """
-    Speech Commands -> MFCC "images" for SNN.
-    Each item: (tensor [1, 40, 100], int_label)
+    Speech Commands using 10 selected core words
     """
     def __init__(self,data_root: str,selected: Optional[List[str]] = None,fixed_frames: int = 100,n_mfcc: int = 40,n_mels: int = 64,subset: str = "training", 
         noise_augmentor=None):
@@ -195,7 +194,6 @@ class SpeechCommandsMFCC(Dataset):
             "yes", "no", "up", "down", "left", "right", "on", "off",
             "stop", "go"]
 
-        # Collect indices for chosen classes from torchaudio's walker
         class_to_indices: Dict[str, List[int]] = defaultdict(list)
         for i, rel in enumerate(self.base._walker):
             label_folder = os.path.basename(os.path.split(rel)[0])
@@ -223,7 +221,7 @@ class SpeechCommandsMFCC(Dataset):
         wav, sr = safe_load_wav(path)
 
         if self.noise_augmentor is not None:
-            wav, sr = self.noise_augmentor(wav, sr)  # should return (wav, sr)
+            wav, sr = self.noise_augmentor(wav, sr)  # should return (wav, sr)!!
 
         label_name = os.path.basename(os.path.split(rel)[0])
         mfcc = self.pre(wav, int(sr)).contiguous().clone()  # [40, fixed]
@@ -238,3 +236,4 @@ def build_speechcommands(data_root: str,selected_classes: Optional[List[str]] = 
         noise_augmentor=None, 
     )
     return train_ds, test_ds
+
